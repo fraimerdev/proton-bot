@@ -1,20 +1,20 @@
-import type { Collection } from 'discord.js';
-import { Events, MessageFlags } from 'discord.js';
+import type { ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
+import { Events, MessageFlags } from "discord.js";
 
-import type { ApplicationCommand } from '../../types/command';
-import { createEvent } from '../../utils/create';
-import { Logger } from '../../utils/logger';
+import type { Client } from "../../base/client";
+import { createEvent } from "../../utils/create";
+import { logCommandUsed, logError } from "../../utils/logger";
 
 export const event = createEvent({
   name: Events.InteractionCreate,
   run: async (client, interaction) => {
-    let commandsCollection: Collection<string, ApplicationCommand> | null = null;
+    if (!interaction.isChatInputCommand() && !interaction.isContextMenuCommand()) {
+      return false;
+    }
 
-    if (interaction.isChatInputCommand()) commandsCollection = client.commands.slashCommands;
-    else if (interaction.isContextMenuCommand()) commandsCollection = client.commands.contextMenuCommands;
-    else return false;
-
-    if (!commandsCollection) return false;
+    const commandsCollection = interaction.isChatInputCommand()
+      ? client.commands.slashCommands
+      : client.commands.contextMenuCommands;
 
     const command = commandsCollection.get(interaction.commandName);
 
@@ -23,22 +23,31 @@ export const event = createEvent({
     if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
       await interaction.reply({
         content: "You don't have permission to use this command.",
-        ephemeral: true
+        ephemeral: true,
       });
 
       return false;
     }
 
-    if (command.defer) await interaction.deferReply({ flags: command.ephemeral ? MessageFlags.Ephemeral : undefined });
+    if (command.defer)
+      await interaction.deferReply({
+        flags: command.ephemeral ? MessageFlags.Ephemeral : undefined,
+      });
 
-    Logger.logCommandUsed(command, interaction.user);
+    logCommandUsed(command, interaction.user);
 
     try {
-      await command.execute(client, interaction as any); /* eslint-disable-line @typescript-eslint/no-explicit-any*/
+      // Type assertion needed due to union type limitations
+      await (
+        command.execute as (
+          client: Client,
+          interaction: ChatInputCommandInteraction | ContextMenuCommandInteraction,
+        ) => Promise<boolean>
+      )(client, interaction);
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
 
-      const errorMessage = 'An error occurred while executing this command.';
+      const errorMessage = "An error occurred while executing this command.";
 
       if (command.defer) {
         await interaction.editReply({ content: errorMessage }).catch(() => null);
@@ -50,5 +59,5 @@ export const event = createEvent({
     }
 
     return true;
-  }
+  },
 });

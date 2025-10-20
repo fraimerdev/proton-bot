@@ -1,4 +1,4 @@
-import { Logger } from "./logger";
+import { logErrorMessage } from "./logger";
 
 export function checkEnvVar<T = string>(
   name: string,
@@ -18,10 +18,7 @@ export function checkEnvVar<T = string>(
   const envVar = Bun.env[name];
   if (!envVar) {
     if (panic) {
-      Logger.logErrorMessage(
-        `Missing required environment variable: ${name}`,
-        true,
-      );
+      logErrorMessage(`Missing required environment variable: ${name}`, true);
     }
     return undefined;
   }

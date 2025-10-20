@@ -1,6 +1,6 @@
-import { Events } from 'discord.js';
+import { Events } from "discord.js";
 
-import { createEvent } from '../../utils/create';
+import { createEvent } from "../../utils/create";
 
 export const event = createEvent({
   name: Events.Warn,
@@ -8,5 +8,5 @@ export const event = createEvent({
   run: async (client, message) => {
     client.logger.logWarningMessage(message);
     return true;
-  }
+  },
 });

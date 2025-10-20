@@ -1,31 +1,31 @@
-import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 
-import { ComponentCommandBuilder } from '../../../base/componentCommandBuilder';
-import { CommandTypes } from '../../../types/enums';
-import { createCommand } from '../../../utils/create';
+import { ComponentCommandBuilder } from "../../../base/componentCommandBuilder";
+import { CommandTypes } from "../../../types/enums";
+import { createCommand } from "../../../utils/create";
 
 export const command = createCommand({
   type: CommandTypes.ButtonCommand,
-  data: new ComponentCommandBuilder().setName('test_button').setCustomId(/test-button-(\d+)-(\d+)/),
-  execute: async (client, interaction) => {
+  data: new ComponentCommandBuilder().setName("test_button").setCustomId(/test-button-(\d+)-(\d+)/),
+  execute: async (_client, interaction) => {
     const inputs = [
       new TextInputBuilder()
         .setStyle(TextInputStyle.Short)
-        .setLabel('Test Input 1')
-        .setCustomId('test_input')
-        .setPlaceholder('Test Input')
+        .setLabel("Test Input 1")
+        .setCustomId("test_input")
+        .setPlaceholder("Test Input")
         .setRequired(true),
       new TextInputBuilder()
-        .setLabel('Test Input 2')
+        .setLabel("Test Input 2")
         .setStyle(TextInputStyle.Short)
-        .setCustomId('test_input2')
-        .setPlaceholder('Test Input 2')
-        .setRequired(true)
-    ].map(input => new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+        .setCustomId("test_input2")
+        .setPlaceholder("Test Input 2")
+        .setRequired(true),
+    ].map((input) => new ActionRowBuilder<TextInputBuilder>().addComponents(input));
 
-    const modal = new ModalBuilder().setTitle('Test Modal').setCustomId('test_modal').addComponents(inputs);
+    const modal = new ModalBuilder().setTitle("Test Modal").setCustomId("test_modal").addComponents(inputs);
 
     await interaction.showModal(modal);
     return true;
-  }
+  },
 });

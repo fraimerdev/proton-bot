@@ -1,9 +1,19 @@
-import type { Collection } from 'discord.js';
-import { Events, MessageFlags } from 'discord.js';
+import type {
+  ButtonInteraction,
+  ChannelSelectMenuInteraction,
+  Collection,
+  MentionableSelectMenuInteraction,
+  ModalSubmitInteraction,
+  RoleSelectMenuInteraction,
+  StringSelectMenuInteraction,
+  UserSelectMenuInteraction,
+} from "discord.js";
+import { Events, MessageFlags } from "discord.js";
 
-import type { ComponentCommand } from '../../types/command';
-import { createEvent } from '../../utils/create';
-import { Logger } from '../../utils/logger';
+import type { Client } from "../../base/client";
+import type { ComponentCommand } from "../../types/command";
+import { createEvent } from "../../utils/create";
+import { logError } from "../../utils/logger";
 
 export const event = createEvent({
   name: Events.InteractionCreate,
@@ -21,21 +31,21 @@ export const event = createEvent({
 
     if (!commandsCollection) return false;
 
-    const command = commandsCollection.find(cmd => cmd.data.customId.test(interaction.customId));
+    const command = commandsCollection.find((cmd) => cmd.data.customId.test(interaction.customId));
 
     if (!command) return false;
 
     if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
       await interaction.reply({
         content: "You don't have permission to use this command.",
-        ephemeral: true
+        ephemeral: true,
       });
       return false;
     }
 
     if (command.defer)
       await interaction.deferReply({
-        flags: command.ephemeral ? MessageFlags.Ephemeral : undefined
+        flags: command.ephemeral ? MessageFlags.Ephemeral : undefined,
       });
 
     const commandIdData = command.data.customId.exec(interaction.customId);
@@ -45,15 +55,25 @@ export const event = createEvent({
     if (command.data.needReset) command.data.reset();
 
     try {
-      await command.execute(
-        client,
-        interaction as any /* eslint-disable-line @typescript-eslint/no-explicit-any*/,
-        commandIdData
-      );
+      // Type assertion needed due to union type limitations
+      await (
+        command.execute as (
+          client: Client,
+          interaction:
+            | ButtonInteraction
+            | ModalSubmitInteraction
+            | StringSelectMenuInteraction
+            | UserSelectMenuInteraction
+            | RoleSelectMenuInteraction
+            | MentionableSelectMenuInteraction
+            | ChannelSelectMenuInteraction,
+          commandIdData: RegExpExecArray,
+        ) => Promise<boolean>
+      )(client, interaction, commandIdData);
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
 
-      const errorMessage = 'An error occurred while executing this command.';
+      const errorMessage = "An error occurred while executing this command.";
 
       if (command.defer) {
         await interaction.editReply({ content: errorMessage }).catch(() => null);
@@ -65,5 +85,5 @@ export const event = createEvent({
     }
 
     return true;
-  }
+  },
 });

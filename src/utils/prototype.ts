@@ -1,4 +1,4 @@
-import { camelCase, formatString, titleCase } from './strings';
+import { camelCase, formatString, titleCase } from "./strings";
 
 String.prototype.format = function (record: Record<string, string>): string {
   return formatString(this.toString(), record);

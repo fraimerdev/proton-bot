@@ -1,6 +1,6 @@
-import { Events } from 'discord.js';
+import { Events } from "discord.js";
 
-import { createEvent } from '../../utils/create';
+import { createEvent } from "../../utils/create";
 
 export const event = createEvent({
   name: Events.MessageCreate,
@@ -12,7 +12,7 @@ export const event = createEvent({
 
     if (!prefixRegex.test(message.content)) return false;
 
-    const pureContent = message.content.trim().replace(prefixRegex, '');
+    const pureContent = message.content.trim().replace(prefixRegex, "");
 
     const [commandName] = pureContent.split(/(?: |\n)+/);
 
@@ -33,5 +33,5 @@ export const event = createEvent({
     }
 
     return true;
-  }
+  },
 });

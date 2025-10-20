@@ -1,6 +1,6 @@
-import type { ClientEvents } from 'discord.js';
+import type { ClientEvents } from "discord.js";
 
-import type { Client } from '../base/client';
+import type { Client } from "../base/client";
 declare type ClientEventKey = keyof ClientEvents;
 
 declare interface Event<ClientEvent extends ClientEventKey, Ready extends boolean> {

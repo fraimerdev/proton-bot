@@ -3,7 +3,7 @@ import { Hono } from "hono";
 
 import { client } from "../index";
 import { ENV } from "../utils/env";
-import { Logger } from "../utils/logger";
+import { logError } from "../utils/logger";
 
 const app = new Hono();
 
@@ -28,15 +28,10 @@ export async function startApi(debug = false): Promise<boolean> {
       port,
       fetch: app.fetch,
     });
-    if (debug)
-      console.log(
-        colors.white.bold.bgCyanBright(
-          `Server is running http://localhost:${port}`,
-        ),
-      );
+    if (debug) console.log(colors.white.bold.bgCyanBright(`Server is running http://localhost:${port}`));
     return true;
   } catch (error) {
-    Logger.logError(error as Error);
+    logError(error as Error);
     return false;
   }
 }

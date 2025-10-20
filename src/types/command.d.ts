@@ -11,13 +11,13 @@ import type {
   ModalSubmitInteraction,
   RoleSelectMenuInteraction,
   StringSelectMenuInteraction,
-  UserSelectMenuInteraction
-} from 'discord.js';
+  UserSelectMenuInteraction,
+} from "discord.js";
 
-import type { Client } from '../base/client';
-import type { ComponentCommandBuilder } from '../base/componentCommandBuilder';
-import type { MessageCommandBuilder } from '../base/messageCommandBuilder';
-import type { CommandTypes } from './enums';
+import type { Client } from "../base/client";
+import type { ComponentCommandBuilder } from "../base/componentCommandBuilder";
+import type { MessageCommandBuilder } from "../base/messageCommandBuilder";
+import type { CommandTypes } from "./enums";
 
 type BooleanPromise = Promise<boolean>;
 
@@ -26,7 +26,7 @@ interface BaseCommand {
   devOnly?: boolean;
 }
 
-type MessageCommandBuilderData = {
+export type MessageCommandBuilderData = {
   name: string;
   description: string;
   aliases: string[];
@@ -59,7 +59,7 @@ interface ContextMenuCommand extends InteractionCommand {
 
 /* Component Commands */
 
-type ComponentCommandBuilderData = {
+export type ComponentCommandBuilderData = {
   name: string;
   customId: RegExp;
 };
@@ -85,7 +85,7 @@ interface ChannelSelectMenuCommand extends InteractionCommand {
   execute: (
     client: Client,
     interaction: ChannelSelectMenuInteraction,
-    commandIdData: RegExpExecArray
+    commandIdData: RegExpExecArray,
   ) => BooleanPromise;
 }
 interface UserSelectMenuCommand extends InteractionCommand {
@@ -105,7 +105,7 @@ interface MentionableSelectMenuCommand extends InteractionCommand {
   execute: (
     client: Client,
     interaction: MentionableSelectMenuInteraction,
-    commandIdData: RegExpExecArray
+    commandIdData: RegExpExecArray,
   ) => BooleanPromise;
 }
 

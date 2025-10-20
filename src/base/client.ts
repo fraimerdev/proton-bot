@@ -1,31 +1,18 @@
-import { lstat, readdir } from "fs/promises";
-import { resolve } from "path";
-
+import { lstat, readdir } from "node:fs/promises";
+import { resolve } from "node:path";
 import colors from "ansi-colors";
-import type { ClientOptions } from "discord.js";
-import {
-  Client as DiscordBotClient,
-  Collection,
-  REST,
-  Routes,
-} from "discord.js";
+import { Collection, Client as DiscordBotClient, REST, Routes } from "discord.js";
 
 import { startApi } from "../api/app";
 import { Config } from "../configs/bot";
 import { connectToDB, database } from "../database/main";
-import type {
-  AnyCommand,
-  ApplicationCommand,
-  ClientCommands,
-} from "../types/command";
+import type { AnyCommand, ApplicationCommand, ClientCommands } from "../types/command";
 import { CommandTypes } from "../types/enums";
 import type { AnyEvent } from "../types/event";
 import { ENV } from "../utils/env";
-import { Logger } from "../utils/logger";
+import { Logger, logCommandRegistered, logError, logErrorMessage, logEventRegistered } from "../utils/logger";
 
-export class Client<
-  Ready extends boolean = boolean,
-> extends DiscordBotClient<Ready> {
+export class Client<Ready extends boolean = boolean> extends DiscordBotClient<Ready> {
   protected cwd: string = process.cwd();
 
   protected isTypescript: boolean = process.argv[1].endsWith(".ts");
@@ -45,10 +32,7 @@ export class Client<
 
     modalSubmit: new Collection(),
     get applicationCommands() {
-      return new Collection<string, ApplicationCommand>([
-        ...this.slashCommands,
-        ...this.contextMenuCommands,
-      ]);
+      return new Collection<string, ApplicationCommand>([...this.slashCommands, ...this.contextMenuCommands]);
     },
   };
 
@@ -60,15 +44,9 @@ export class Client<
 
   public env = ENV;
 
-  constructor(options: ClientOptions) {
-    super(options);
-  }
-
   protected async readDir<T>(dir: string): Promise<T[]> {
     try {
-      const baseDir = this.isTypescript
-        ? Client.sourceFolder
-        : Client.distFolder;
+      const baseDir = this.isTypescript ? Client.sourceFolder : Client.distFolder;
       const path = resolve(this.cwd, baseDir, dir);
       const files = await readdir(path);
       const data: T[] = [];
@@ -82,19 +60,13 @@ export class Client<
           continue;
         }
 
-        if (!(this.isTypescript ? file.endsWith(".ts") : file.endsWith(".js")))
-          continue;
+        if (!(this.isTypescript ? file.endsWith(".ts") : file.endsWith(".js"))) continue;
 
-        const importData: Record<string, T | undefined> = await import(
-          filePath
-        );
+        const importData: Record<string, T | undefined> = await import(filePath);
         const importedLength = Object.keys(importData).length;
 
         if (importedLength === 0) {
-          Logger.logErrorMessage(
-            `File ${filePath} is empty, no exports found`,
-            true,
-          );
+          logErrorMessage(`File ${filePath} is empty, no exports found`, true);
         }
 
         for (const key in importData) {
@@ -104,15 +76,12 @@ export class Client<
       }
       return data;
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
       return [];
     }
   }
 
-  protected async loadEvents(
-    eventsDir: string,
-    debug = false,
-  ): Promise<boolean> {
+  protected async loadEvents(eventsDir: string, debug = false): Promise<boolean> {
     const events = await this.readDir<AnyEvent>(eventsDir).catch(() => null);
     if (!events) return false;
 
@@ -124,27 +93,20 @@ export class Client<
           await event.run(this, ...args);
         } catch (error) {
           console.log(colors.red(`Error in event ${event.name}`));
-          Logger.logError(error as Error);
+          logError(error as Error);
         }
       });
 
-      if (debug) Logger.logEventRegistered(event);
+      if (debug) logEventRegistered(event);
     }
 
     return true;
   }
 
-  protected async loadCommands(
-    commandsDir: string,
-    debug = false,
-  ): Promise<boolean> {
-    let commands = await this.readDir<AnyCommand>(commandsDir).catch(
-      () => null,
-    );
+  protected async loadCommands(commandsDir: string, debug = false): Promise<boolean> {
+    let commands = await this.readDir<AnyCommand>(commandsDir).catch(() => null);
     if (!commands) return false;
-    commands = commands.sort(
-      (a, b) => a.type - b.type || a.data.name.localeCompare(b.data.name),
-    );
+    commands = commands.sort((a, b) => a.type - b.type || a.data.name.localeCompare(b.data.name));
 
     for (const command of commands) {
       switch (command.type) {
@@ -165,47 +127,30 @@ export class Client<
           this.commands.modalSubmit.set(command.data.customId, command);
           break;
         case CommandTypes.StringSelectMenuCommand:
-          this.commands.stringSelectMenuCommands.set(
-            command.data.customId,
-            command,
-          );
+          this.commands.stringSelectMenuCommands.set(command.data.customId, command);
           break;
         case CommandTypes.UserSelectMenuCommand:
-          this.commands.userSelectMenuCommands.set(
-            command.data.customId,
-            command,
-          );
+          this.commands.userSelectMenuCommands.set(command.data.customId, command);
           break;
         case CommandTypes.RoleSelectMenuCommand:
-          this.commands.roleSelectMenuCommands.set(
-            command.data.customId,
-            command,
-          );
+          this.commands.roleSelectMenuCommands.set(command.data.customId, command);
           break;
         case CommandTypes.MentionableSelectMenuCommand:
-          this.commands.mentionableSelectMenuCommands.set(
-            command.data.customId,
-            command,
-          );
+          this.commands.mentionableSelectMenuCommands.set(command.data.customId, command);
           break;
         case CommandTypes.ChannelSelectMenuCommand:
-          this.commands.channelSelectMenuCommands.set(
-            command.data.customId,
-            command,
-          );
+          this.commands.channelSelectMenuCommands.set(command.data.customId, command);
           break;
       }
 
-      if (debug) Logger.logCommandRegistered(command);
+      if (debug) logCommandRegistered(command);
     }
 
     return true;
   }
 
   protected async registerCommands(): Promise<boolean> {
-    const commands = this.commands.applicationCommands.map((command) =>
-      command.data.toJSON(),
-    );
+    const commands = this.commands.applicationCommands.map((command) => command.data.toJSON());
 
     const rest = new REST().setToken(ENV.BOT_TOKEN);
 
@@ -215,7 +160,7 @@ export class Client<
       });
       return true;
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
       return false;
     }
   }
@@ -225,69 +170,41 @@ export class Client<
       const connected = await connectToDB();
       return connected;
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
       return false;
     }
   }
 
   public async init(options: StartOptions): Promise<boolean> {
-    const loadCommands = await this.loadCommands(
-      options.commandsDirName,
-      options.debug,
-    );
+    const loadCommands = await this.loadCommands(options.commandsDirName, options.debug);
 
-    if (options.debug && loadCommands)
-      console.log(
-        colors.white.bold.bgGreenBright(`Commands loaded successfully\n`),
-      );
+    if (options.debug && loadCommands) console.log(colors.white.bold.bgGreenBright(`Commands loaded successfully\n`));
 
-    const loadEvents = await this.loadEvents(
-      options.eventsDirName,
-      options.debug,
-    );
+    const loadEvents = await this.loadEvents(options.eventsDirName, options.debug);
 
-    if (options.debug && loadEvents)
-      console.log(
-        colors.white.bold.bgBlueBright(`Events loaded successfully\n`),
-      );
+    if (options.debug && loadEvents) console.log(colors.white.bold.bgBlueBright(`Events loaded successfully\n`));
 
-    const registeredCommands = options.registerCommands
-      ? await this.registerCommands()
-      : true;
+    const registeredCommands = options.registerCommands ? await this.registerCommands() : true;
 
     if (options.debug && options.registerCommands && registeredCommands)
-      console.log(
-        colors.white.bold.bgGreen(
-          `ApplicationCommands registered successfully\n`,
-        ),
-      );
+      console.log(colors.white.bold.bgGreen(`ApplicationCommands registered successfully\n`));
 
     const connectedToDatabase = await this.startDatabase();
 
-    if (options.debug && connectedToDatabase)
-      console.log(colors.white.bold.bgCyanBright(`Connected to database\n`));
+    if (options.debug && connectedToDatabase) console.log(colors.white.bold.bgCyanBright(`Connected to database\n`));
 
     const loggedToDiscord = await this.login(options.token)
       .then(() => true)
       .catch(() => false);
 
-    if (options.debug && loggedToDiscord)
-      console.log(colors.white.bold.bgGreenBright(`Logged in to Discord\n`));
+    if (options.debug && loggedToDiscord) console.log(colors.white.bold.bgGreenBright(`Logged in to Discord\n`));
 
     const startApiSuccess = await startApi(options.debug);
 
-    if (options.debug && startApiSuccess)
-      console.log(
-        colors.white.bold.bgGreenBright(`API started successfully\n`),
-      );
+    if (options.debug && startApiSuccess) console.log(colors.white.bold.bgGreenBright(`API started successfully\n`));
 
     const allSuccess =
-      loadCommands &&
-      loadEvents &&
-      registeredCommands &&
-      connectedToDatabase &&
-      loggedToDiscord &&
-      startApiSuccess;
+      loadCommands && loadEvents && registeredCommands && connectedToDatabase && loggedToDiscord && startApiSuccess;
 
     return allSuccess;
   }

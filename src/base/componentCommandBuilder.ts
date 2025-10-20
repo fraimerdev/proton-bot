@@ -1,9 +1,9 @@
-import type { ComponentCommandBuilderData } from '../types/command';
+import type { ComponentCommandBuilderData } from "../types/command";
 
 export class ComponentCommandBuilder {
   public data: ComponentCommandBuilderData = {
-    name: '',
-    customId: /.?/
+    name: "",
+    customId: /.?/,
   };
 
   constructor(data?: ComponentCommandBuilderData) {
@@ -20,7 +20,7 @@ export class ComponentCommandBuilder {
   }
 
   setCustomId(customId: RegExp | string) {
-    if (typeof customId === 'string') customId = new RegExp(customId);
+    if (typeof customId === "string") customId = new RegExp(customId);
     this.data.customId = customId;
     return this;
   }

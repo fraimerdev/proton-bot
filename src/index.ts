@@ -1,16 +1,10 @@
 import "./utils/prototype";
 
-import {
-  ActivityType,
-  AllowedMentionsTypes,
-  GatewayIntentBits,
-  Partials,
-  PresenceUpdateStatus,
-} from "discord.js";
+import { ActivityType, AllowedMentionsTypes, GatewayIntentBits, Partials, PresenceUpdateStatus } from "discord.js";
 
 import { Client } from "./base/client";
 import { ENV } from "./utils/env";
-import { Logger } from "./utils/logger";
+import { logError, logWarningMessage } from "./utils/logger";
 
 export const client = new Client({
   intents: [
@@ -45,14 +39,14 @@ client.init({
 });
 
 process.on("unhandledRejection", (error: Error) => {
-  Logger.logError(error);
+  logError(error);
 });
 
 process.on("uncaughtException", (error: Error) => {
-  Logger.logError(error);
+  logError(error);
 });
 
 process.on("SIGINT", async () => {
-  Logger.logWarningMessage("\nShutting down...");
+  logWarningMessage("\nShutting down...");
   process.exit(0);
 });

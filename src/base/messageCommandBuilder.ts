@@ -1,10 +1,10 @@
-import type { MessageCommandBuilderData } from '../types/command';
+import type { MessageCommandBuilderData } from "../types/command";
 
 export class MessageCommandBuilder {
   public data: MessageCommandBuilderData = {
-    name: '',
-    description: '',
-    aliases: []
+    name: "",
+    description: "",
+    aliases: [],
   };
 
   constructor(data?: MessageCommandBuilderData) {
@@ -39,7 +39,7 @@ export class MessageCommandBuilder {
   }
 
   addAliases(...aliases: string[]) {
-    this.data.aliases.push(...aliases.filter(alias => !this.data.aliases.includes(alias)));
+    this.data.aliases.push(...aliases.filter((alias) => !this.data.aliases.includes(alias)));
     return this;
   }
 

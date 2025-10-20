@@ -1,7 +1,7 @@
-import { Events } from 'discord.js';
+import { Events } from "discord.js";
 
-import { createEvent } from '../../utils/create';
-import { Logger } from '../../utils/logger';
+import { createEvent } from "../../utils/create";
+import { logError } from "../../utils/logger";
 
 export const event = createEvent({
   name: Events.InteractionCreate,
@@ -22,10 +22,10 @@ export const event = createEvent({
     try {
       await command.autoComplete(client, interaction);
     } catch (error) {
-      Logger.logError(error as Error);
+      logError(error as Error);
       return false;
     }
 
     return true;
-  }
+  },
 });

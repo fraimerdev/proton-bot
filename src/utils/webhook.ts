@@ -1,9 +1,9 @@
-import { WebhookClient } from 'discord.js';
+import { WebhookClient } from "discord.js";
 
-import { WEBHOOK_URL } from './env';
+import { WEBHOOK_URL } from "./env";
 
 export const webhook = WEBHOOK_URL
   ? new WebhookClient({
-      url: WEBHOOK_URL
+      url: WEBHOOK_URL,
     })
   : null;
