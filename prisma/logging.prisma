@@ -1,0 +1,17 @@
+model Logging {
+  id                 String   @id @default(cuid())
+  guildId            String   @unique
+  message            String?
+  member             String?
+  gateway            String?
+  server             String?
+  role               String?
+  channel            String?
+  msgIgnoredChannels String[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("logging")
+}

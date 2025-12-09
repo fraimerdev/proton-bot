@@ -1,0 +1,23 @@
+model Case {
+  id                 String   @id @default(cuid())
+  caseId             Int      @unique
+  guildId            String
+  type               Int
+  userId             String
+  userUsername       String
+  userAvatarUrl      String?
+  moderatorId        String
+  moderatorUsername  String
+  moderatorAvatarUrl String?
+  duration           Int
+  reason             String
+  createdAt          DateTime
+  updatedAt          DateTime @updatedAt
+
+  guild     Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  user      User  @relation("UserCases", fields: [userId], references: [userId], onDelete: Cascade)
+  moderator User  @relation("ModeratorCases", fields: [moderatorId], references: [userId], onDelete: Cascade)
+
+  @@index([guildId, caseId])
+  @@map("cases")
+}

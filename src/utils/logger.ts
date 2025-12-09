@@ -5,51 +5,102 @@ import type { AnyCommand } from "../types/command";
 import { CommandTypes } from "../types/enums";
 import type { AnyEvent } from "../types/event";
 
-export function logError(error: Error, panic = false): void {
-  console.log(
-    `${colors.red.underline.bold("Error:")} ${colors.green.bold(
-      error.name,
-    )} ${colors.red.bold(error.message)}\n${colors.white(error.stack || "no error stack")}`,
-  );
-  if (panic) process.exit(1);
+const PREFIX = {
+  LOAD: colors.cyan.bold("[LOAD]"),
+  SUCCESS: colors.green.bold("[SUCCESS]"),
+  ERROR: colors.red.bold("[ERROR]"),
+  WARN: colors.yellow.bold("[WARN]"),
+  INFO: colors.blue.bold("[INFO]"),
+} as const;
+
+function timestamp(): string {
+  const now = new Date();
+  const time = now.toLocaleTimeString("en-US", { hour12: false });
+  return colors.gray(`[${time}]`);
 }
 
-export function logErrorMessage(message: string, panic = false): void {
-  console.log(`${colors.red.underline.bold("Error:")} ${colors.red.bold(message)}\n`);
-  if (panic) process.exit(1);
+function formatMessage(prefix: string, message: string): string {
+  return `${timestamp()} ${prefix} ${message}`;
 }
 
-export function logWarningMessage(warning: string): void {
-  console.log(`${colors.yellow.underline.bold("Warning:")} ${colors.red.bold(warning)}\n`);
-}
+const Logger = {
+  load(message: string): void {
+    console.log(formatMessage(PREFIX.LOAD, colors.white(message)));
+  },
 
-export function logEventRegistered(event: AnyEvent): void {
-  console.log(
-    `${colors.blue.underline.bold("Event:")} ${colors.red.bold(event.name)} ${colors.magenta("has been registered successfully")}\n`,
-  );
-}
+  success(message: string): void {
+    console.log(formatMessage(PREFIX.SUCCESS, colors.white(message)));
+  },
 
-export function logCommandRegistered(command: AnyCommand): void {
-  console.log(
-    `${colors.green.underline.bold.bold("Command:")} ${colors.red.bold(
-      command.data.name,
-    )} ${colors.blue(CommandTypes[command.type])} ${colors.magenta("has been registered successfully")}\n`,
-  );
-}
+  error(message: string, error?: Error, panic = false): void {
+    const errorMsg = error
+      ? `${message}\n${colors.red("  └─")} ${colors.white(error.name)}: ${colors.white(error.message)}`
+      : message;
 
-export function logCommandUsed(command: AnyCommand, user: User): void {
-  const message = `- ${colors.greenBright(command.data.name)} ${colors.red(
-    CommandTypes[command.type],
-  )} was used by ${colors.greenBright(user.username)}`;
-  console.log(message);
-}
+    console.log(formatMessage(PREFIX.ERROR, colors.white(errorMsg)));
 
-// Export as namespace object for backward compatibility
-export const Logger = {
-  logError,
-  logErrorMessage,
-  logWarningMessage,
-  logEventRegistered,
-  logCommandRegistered,
-  logCommandUsed,
+    if (error?.stack) {
+      const stackLines = error.stack.split("\n").slice(1);
+      stackLines.forEach((line) => {
+        console.log(colors.gray(`     ${line.trim()}`));
+      });
+    }
+
+    if (panic) {
+      console.log(colors.red.bold("\nExiting due to fatal error...\n"));
+      process.exit(1);
+    }
+  },
+
+  warn(message: string): void {
+    console.log(formatMessage(PREFIX.WARN, colors.white(message)));
+  },
+
+  info(message: string): void {
+    console.log(formatMessage(PREFIX.INFO, colors.white(message)));
+  },
+
+  eventRegistered(event: AnyEvent): void {
+    const message = `Event "${colors.cyan(event.name)}" registered successfully`;
+    Logger.success(message);
+  },
+
+  commandRegistered(command: AnyCommand): void {
+    const commandType = colors.magenta(`[${CommandTypes[command.type]}]`);
+    const message = `Command "${colors.cyan(command.data.name)}" ${commandType} registered successfully`;
+    Logger.success(message);
+  },
+
+  commandUsed(command: AnyCommand, user: User): void {
+    const commandType = colors.magenta(`[${CommandTypes[command.type]}]`);
+    const message = `Command "${colors.cyan(command.data.name)}" ${commandType} used by ${colors.yellow(user.username)}`;
+    Logger.info(message);
+  },
 };
+
+export const logError = (error: Error, panic = false): void => {
+  Logger.error("An error occurred", error, panic);
+};
+
+export const logErrorMessage = (message: string, panic = false): void => {
+  Logger.error(message, undefined, panic);
+};
+
+export const logWarningMessage = (warning: string): void => {
+  Logger.warn(warning);
+};
+
+export const logEventRegistered = (event: AnyEvent): void => {
+  Logger.eventRegistered(event);
+};
+
+export const logCommandRegistered = (command: AnyCommand): void => {
+  Logger.commandRegistered(command);
+};
+
+export const logCommandUsed = (command: AnyCommand, user: User): void => {
+  Logger.commandUsed(command, user);
+};
+
+export { Logger };
+export default Logger;

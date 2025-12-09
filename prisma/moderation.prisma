@@ -1,0 +1,19 @@
+model Moderation {
+  id             String   @id @default(cuid())
+  guildId        String   @unique
+  purgeLimit     Int?
+  dmBans         Boolean?
+  dmKicks        Boolean?
+  dmTimeouts     Boolean?
+  dmWarns        Boolean?
+  modroles       String[]
+  warnThresholds Json?
+  logChannel     String?
+  caseCount      Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  guild Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("moderation")
+}

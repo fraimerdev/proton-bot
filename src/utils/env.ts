@@ -1,4 +1,4 @@
-import { logErrorMessage } from "./logger";
+import Logger from "./logger";
 
 export function checkEnvVar<T = string>(
   name: string,
@@ -18,7 +18,11 @@ export function checkEnvVar<T = string>(
   const envVar = Bun.env[name];
   if (!envVar) {
     if (panic) {
-      logErrorMessage(`Missing required environment variable: ${name}`, true);
+      Logger.error(
+        `Missing required environment variable: ${name}`,
+        undefined,
+        true,
+      );
     }
     return undefined;
   }
@@ -31,9 +35,7 @@ export const BOT_TOKEN = checkEnvVar("DISCORD_BOT_TOKEN");
 
 export const CLIENT_ID = checkEnvVar("DISCORD_CLIENT_ID");
 
-export const MONGO_URI = checkEnvVar("MONGO_URI");
-
-export const DATABASE_NAME = checkEnvVar("DATABASE_NAME");
+export const DATABASE_URL = checkEnvVar("DATABASE_URL");
 
 export const WEBHOOK_URL = checkEnvVar("WEBHOOK_URL", undefined, false) || null;
 
@@ -47,8 +49,7 @@ export const ENV = {
   PORT,
   BOT_TOKEN,
   CLIENT_ID,
-  MONGO_URI,
-  DATABASE_NAME,
+  DATABASE_URL,
   WEBHOOK_URL,
   NODE_ENV,
   isProduction,

@@ -2,7 +2,7 @@ import colors from "ansi-colors";
 import { Events } from "discord.js";
 import figlet from "figlet";
 
-import { createEvent } from "../../utils/create";
+import { createEvent } from "../../../utils/create";
 
 export const event = createEvent({
   name: Events.ClientReady,

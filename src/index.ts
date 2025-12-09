@@ -1,10 +1,16 @@
 import "./utils/prototype";
 
-import { ActivityType, AllowedMentionsTypes, GatewayIntentBits, Partials, PresenceUpdateStatus } from "discord.js";
+import {
+  ActivityType,
+  AllowedMentionsTypes,
+  GatewayIntentBits,
+  Partials,
+  PresenceUpdateStatus,
+} from "discord.js";
 
 import { Client } from "./base/client";
 import { ENV } from "./utils/env";
-import { logError, logWarningMessage } from "./utils/logger";
+import Logger from "./utils/logger";
 
 export const client = new Client({
   intents: [
@@ -32,21 +38,20 @@ export const client = new Client({
 
 client.init({
   token: ENV.BOT_TOKEN,
-  commandsDirName: "commands",
-  eventsDirName: "events",
+  modulesDirName: "modules",
   registerCommands: true,
   debug: true,
 });
 
 process.on("unhandledRejection", (error: Error) => {
-  logError(error);
+  Logger.error("Unhandled promise rejection", error);
 });
 
 process.on("uncaughtException", (error: Error) => {
-  logError(error);
+  Logger.error("Uncaught exception", error);
 });
 
 process.on("SIGINT", async () => {
-  logWarningMessage("\nShutting down...");
+  Logger.warn("Shutting down...");
   process.exit(0);
 });

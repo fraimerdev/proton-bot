@@ -1,7 +1,6 @@
 declare interface StartOptions {
   token: string;
-  eventsDirName: string;
-  commandsDirName: string;
+  modulesDirName: string;
   registerCommands: boolean;
   debug?: boolean;
 }

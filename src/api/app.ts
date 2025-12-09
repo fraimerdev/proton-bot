@@ -1,9 +1,8 @@
-import colors from "ansi-colors";
 import { Hono } from "hono";
 
 import { client } from "../index";
 import { ENV } from "../utils/env";
-import { logError } from "../utils/logger";
+import Logger from "../utils/logger";
 
 const app = new Hono();
 
@@ -28,10 +27,10 @@ export async function startApi(debug = false): Promise<boolean> {
       port,
       fetch: app.fetch,
     });
-    if (debug) console.log(colors.white.bold.bgCyanBright(`Server is running http://localhost:${port}`));
+    if (debug) Logger.success(`Server is running on http://localhost:${port}`);
     return true;
   } catch (error) {
-    logError(error as Error);
+    Logger.error("Failed to start API server", error as Error);
     return false;
   }
 }

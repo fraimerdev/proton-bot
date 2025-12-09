@@ -1,6 +1,6 @@
 import { Events } from "discord.js";
 
-import { createEvent } from "../../utils/create";
+import { createEvent } from "../../../utils/create";
 
 export const event = createEvent({
   name: Events.MessageCreate,

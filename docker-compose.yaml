@@ -1,33 +1,65 @@
 services:
   bot:
     build: .
-    container_name: discord_bot
+    container_name: proton
     restart: unless-stopped
     networks:
       - discord_network
     env_file:
       - .env
     environment:
-      - MONGO_URI=mongodb://admin:password@mongodb:27017
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/proton?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
-      - mongodb
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - '${PORT}:${PORT}'
+      - "${PORT}:${PORT}"
 
-  mongodb:
-    image: mongo:6.0
-    container_name: mongodb
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     restart: unless-stopped
     networks:
       - discord_network
     volumes:
-      - mongo_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: proton
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      - discord_network
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "6379:6379"
 
 volumes:
-  mongo_data:
+  postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:

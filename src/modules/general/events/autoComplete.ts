@@ -1,7 +1,7 @@
 import { Events } from "discord.js";
 
-import { createEvent } from "../../utils/create";
-import { logError } from "../../utils/logger";
+import { createEvent } from "../../../utils/create";
+import Logger from "../../../utils/logger";
 
 export const event = createEvent({
   name: Events.InteractionCreate,
@@ -14,7 +14,10 @@ export const event = createEvent({
 
     if (!command) return false;
 
-    if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
+    if (
+      command.devOnly &&
+      !client.config.devsIds.includes(interaction.user.id)
+    ) {
       return false;
     }
     if (!command.autoComplete) return false;
@@ -22,7 +25,7 @@ export const event = createEvent({
     try {
       await command.autoComplete(client, interaction);
     } catch (error) {
-      logError(error as Error);
+      Logger.error("Autocomplete execution failed", error as Error);
       return false;
     }
 

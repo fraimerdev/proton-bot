@@ -1,14 +1,20 @@
-import type { ChatInputCommandInteraction, ContextMenuCommandInteraction } from "discord.js";
+import type {
+  ChatInputCommandInteraction,
+  ContextMenuCommandInteraction,
+} from "discord.js";
 import { Events, MessageFlags } from "discord.js";
 
-import type { Client } from "../../base/client";
-import { createEvent } from "../../utils/create";
-import { logCommandUsed, logError } from "../../utils/logger";
+import type { Client } from "../../../base/client";
+import { createEvent } from "../../../utils/create";
+import Logger from "../../../utils/logger";
 
 export const event = createEvent({
   name: Events.InteractionCreate,
   run: async (client, interaction) => {
-    if (!interaction.isChatInputCommand() && !interaction.isContextMenuCommand()) {
+    if (
+      !interaction.isChatInputCommand() &&
+      !interaction.isContextMenuCommand()
+    ) {
       return false;
     }
 
@@ -20,7 +26,10 @@ export const event = createEvent({
 
     if (!command) return false;
 
-    if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
+    if (
+      command.devOnly &&
+      !client.config.devsIds.includes(interaction.user.id)
+    ) {
       await interaction.reply({
         content: "You don't have permission to use this command.",
         ephemeral: true,
@@ -34,25 +43,31 @@ export const event = createEvent({
         flags: command.ephemeral ? MessageFlags.Ephemeral : undefined,
       });
 
-    logCommandUsed(command, interaction.user);
+    Logger.commandUsed(command, interaction.user);
 
     try {
       // Type assertion needed due to union type limitations
       await (
         command.execute as (
           client: Client,
-          interaction: ChatInputCommandInteraction | ContextMenuCommandInteraction,
+          interaction:
+            | ChatInputCommandInteraction
+            | ContextMenuCommandInteraction,
         ) => Promise<boolean>
       )(client, interaction);
     } catch (error) {
-      logError(error as Error);
+      Logger.error("Command execution failed", error as Error);
 
       const errorMessage = "An error occurred while executing this command.";
 
       if (command.defer) {
-        await interaction.editReply({ content: errorMessage }).catch(() => null);
+        await interaction
+          .editReply({ content: errorMessage })
+          .catch(() => null);
       } else {
-        await interaction.reply({ content: errorMessage, ephemeral: true }).catch(() => null);
+        await interaction
+          .reply({ content: errorMessage, ephemeral: true })
+          .catch(() => null);
       }
 
       return false;
