@@ -21,6 +21,7 @@ model User {
   moderationActions ModerationAction[] @relation("UserModerationActions")
   cases             Case[]             @relation("UserCases")
   moderatedCases    Case[]             @relation("ModeratorCases")
+  levels            Level[]
 
   @@map("users")
 }
