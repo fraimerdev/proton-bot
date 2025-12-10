@@ -38,6 +38,15 @@ export const event = createEvent({
       return false;
     }
 
+    if (command.guildOnly && !interaction.inGuild()) {
+      await interaction.reply({
+        content: "This command can only be used in a server.",
+        ephemeral: true,
+      });
+
+      return false;
+    }
+
     if (command.defer)
       await interaction.deferReply({
         flags: command.ephemeral ? MessageFlags.Ephemeral : undefined,
@@ -46,7 +55,6 @@ export const event = createEvent({
     Logger.commandUsed(command, interaction.user);
 
     try {
-      // Type assertion needed due to union type limitations
       await (
         command.execute as (
           client: Client,

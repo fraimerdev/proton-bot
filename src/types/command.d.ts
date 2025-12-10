@@ -24,6 +24,7 @@ type BooleanPromise = Promise<boolean>;
 interface BaseCommand {
   type: CommandTypes;
   devOnly?: boolean;
+  guildOnly?: boolean;
 }
 
 export type MessageCommandBuilderData = {
@@ -47,14 +48,25 @@ interface InteractionCommand extends BaseCommand {
 interface SlashCommand extends InteractionCommand {
   type: CommandTypes.SlashCommand;
   data: SharedSlashCommand;
-  autoComplete?: (client: Client, interaction: AutocompleteInteraction) => BooleanPromise;
-  execute: (client: Client, interaction: ChatInputCommandInteraction) => BooleanPromise;
+  autoComplete?: (
+    client: Client,
+    interaction: AutocompleteInteraction,
+  ) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: ChatInputCommandInteraction,
+  ) => BooleanPromise;
 }
 
 interface ContextMenuCommand extends InteractionCommand {
-  type: CommandTypes.MessageContextMenuCommand | CommandTypes.UserContextMenuCommand;
+  type:
+    | CommandTypes.MessageContextMenuCommand
+    | CommandTypes.UserContextMenuCommand;
   data: ContextMenuCommandBuilder;
-  execute: (client: Client, interaction: ContextMenuCommandInteraction) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: ContextMenuCommandInteraction,
+  ) => BooleanPromise;
 }
 
 /* Component Commands */
@@ -67,17 +79,29 @@ export type ComponentCommandBuilderData = {
 interface ButtonCommand extends InteractionCommand {
   type: CommandTypes.ButtonCommand;
   data: ComponentCommandBuilder;
-  execute: (client: Client, interaction: ButtonInteraction, commandIdData: RegExpExecArray) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: ButtonInteraction,
+    commandIdData: RegExpExecArray,
+  ) => BooleanPromise;
 }
 interface ModalSubmitCommand extends InteractionCommand {
   type: CommandTypes.ModalSubmitCommand;
   data: ComponentCommandBuilder;
-  execute: (client: Client, interaction: ModalSubmitInteraction, commandIdData: RegExpExecArray) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: ModalSubmitInteraction,
+    commandIdData: RegExpExecArray,
+  ) => BooleanPromise;
 }
 interface StringSelectMenuCommand extends InteractionCommand {
   type: CommandTypes.StringSelectMenuCommand;
   data: ComponentCommandBuilder;
-  execute: (client: Client, interaction: StringSelectMenuInteraction, commandIdData: RegExpExecArray) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: StringSelectMenuInteraction,
+    commandIdData: RegExpExecArray,
+  ) => BooleanPromise;
 }
 interface ChannelSelectMenuCommand extends InteractionCommand {
   type: CommandTypes.ChannelSelectMenuCommand;
@@ -91,12 +115,20 @@ interface ChannelSelectMenuCommand extends InteractionCommand {
 interface UserSelectMenuCommand extends InteractionCommand {
   type: CommandTypes.UserSelectMenuCommand;
   data: ComponentCommandBuilder;
-  execute: (client: Client, interaction: UserSelectMenuInteraction, commandIdData: RegExpExecArray) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: UserSelectMenuInteraction,
+    commandIdData: RegExpExecArray,
+  ) => BooleanPromise;
 }
 interface RoleSelectMenuCommand extends InteractionCommand {
   type: CommandTypes.RoleSelectMenuCommand;
   data: ComponentCommandBuilder;
-  execute: (client: Client, interaction: RoleSelectMenuInteraction, commandIdData: RegExpExecArray) => BooleanPromise;
+  execute: (
+    client: Client,
+    interaction: RoleSelectMenuInteraction,
+    commandIdData: RegExpExecArray,
+  ) => BooleanPromise;
 }
 
 interface MentionableSelectMenuCommand extends InteractionCommand {
@@ -117,9 +149,15 @@ declare type SelectMenuCommand =
   | RoleSelectMenuCommand
   | ChannelSelectMenuCommand;
 
-declare type ComponentCommand = ButtonCommand | ModalSubmitCommand | SelectMenuCommand;
+declare type ComponentCommand =
+  | ButtonCommand
+  | ModalSubmitCommand
+  | SelectMenuCommand;
 
-declare type AnyCommand = MessageCommand | ApplicationCommand | ComponentCommand;
+declare type AnyCommand =
+  | MessageCommand
+  | ApplicationCommand
+  | ComponentCommand;
 
 declare interface ClientCommands {
   messageCommands: Collection<string, MessageCommand>;
@@ -132,5 +170,8 @@ declare interface ClientCommands {
   userSelectMenuCommands: Collection<RegExp, UserSelectMenuCommand>;
   roleSelectMenuCommands: Collection<RegExp, RoleSelectMenuCommand>;
   channelSelectMenuCommands: Collection<RegExp, ChannelSelectMenuCommand>;
-  mentionableSelectMenuCommands: Collection<RegExp, MentionableSelectMenuCommand>;
+  mentionableSelectMenuCommands: Collection<
+    RegExp,
+    MentionableSelectMenuCommand
+  >;
 }

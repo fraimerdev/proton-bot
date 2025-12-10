@@ -19,6 +19,8 @@ model Guild {
   logs              Log[]
   cases             Case[]
   moderationActions ModerationAction[]
+  modules           Module?
+  levels            Level[]
 
   @@map("guilds")
 }
