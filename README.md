@@ -1,41 +1,52 @@
 # Proton
 
-A Discord bot built with Discord.js and Bun runtime. Why MEE6 when you got Proton?
+A powerful, modular and open-source Discord bot built with Discord.js and Bun. Why MEE6 when you got Proton?
 
 ## Features
 
 - ✨ Slash Commands
-- 💬 Message Commands
-- 🖱️ Context Menu Commands
-- 🔘 Button Interactions
-- 📋 Select Menu Interactions
-- 📝 Modal Submissions
-- 🗄️ MongoDB Database Integration
+- 🔘 Button & Select Menu Components
+- 📝 Modal Interactions
+- 🗄️ PostgreSQL Database with Prisma ORM
+- 🔴 Redis Caching
 - 🌐 REST API with Hono
-- 🔥 Hot Reload for Development
-- 🐳 Docker Support
-- 📦 TypeScript Support
+- 🐳 Docker
+- 📦 TypeScript
+- 🧩 Modular
+
+## Modules
+
+Proton features a modular system for organizing bot functionality:
+
+- **Moderation** - Server moderation tools
+- **Leveling** - XP and leveling system
+- **Logging** - Server activity logging
+- **Automod** - Automated moderation
+- **Starboard** - Star message board
+- **Tickets** - Support ticket system
 
 ## Tech Stack
 
 - **Runtime:** [Bun](https://bun.sh) - Fast all-in-one JavaScript runtime
 - **Framework:** [Discord.js](https://discord.js.org) v14
 - **API:** [Hono](https://hono.dev) - Ultrafast web framework
-- **Database:** [MongoDB](https://mongodb.com) with Mongoose
+- **Database:** [PostgreSQL](https://postgresql.org) with [Prisma](https://prisma.io) ORM
+- **Cache:** [Redis](https://redis.io) with ioredis client
 - **Language:** TypeScript
 - **Linting/Formatting:** Biome
 
 ## Prerequisites
 
 - [Bun](https://bun.sh) v1.0.0 or higher
-- MongoDB instance (local or cloud)
+- PostgreSQL instance (local or cloud)
+- Redis instance (local or cloud)
 - Discord Bot Token and Application ID
 
 ## Installation
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/fraimerdev/proton-bot.git
    cd proton-bot
    ```
 
@@ -53,8 +64,11 @@ A Discord bot built with Discord.js and Bun runtime. Why MEE6 when you got Proto
    DISCORD_CLIENT_ID=your_client_id_here
 
    # Database Configuration
-   MONGO_URI=mongodb://localhost:27017
-   DATABASE_NAME=proton
+   DATABASE_URL=postgresql://username:password@localhost:5432/proton?schema=public
+
+   # Redis Configuration (optional for Docker, required for production)
+   REDIS_HOST=localhost
+   REDIS_PORT=6379
 
    # API Configuration
    PORT=3000
@@ -64,6 +78,15 @@ A Discord bot built with Discord.js and Bun runtime. Why MEE6 when you got Proto
 
    # Optional: Discord Webhook for Logging
    WEBHOOK_URL=your_webhook_url_here
+   ```
+
+4. **Set up the database:**
+   ```bash
+   # Generate Prisma Client
+   bunx prisma generate
+
+   # Run database migrations
+   bunx prisma migrate dev
    ```
 
 ## Usage
@@ -93,11 +116,27 @@ bun run lint
 bun run check
 ```
 
+### Database Management
+
+```bash
+# Open Prisma Studio (Database GUI)
+bunx prisma studio
+
+# Create a new migration
+bunx prisma migrate dev --name your_migration_name
+
+# Deploy migrations to production
+bunx prisma migrate deploy
+
+# Reset database (development only)
+bunx prisma migrate reset
+```
+
 ## Docker Deployment
 
 ### Using Docker Compose (Recommended)
 
-The project includes MongoDB in the docker-compose configuration:
+The project includes PostgreSQL and Redis in the docker-compose configuration:
 
 ```bash
 # Build and start all services
@@ -108,6 +147,9 @@ docker-compose logs -f bot
 
 # Stop services
 docker-compose down
+
+# Stop services and remove volumes
+docker-compose down -v
 ```
 
 ### Using Docker Only
@@ -116,7 +158,7 @@ docker-compose down
 # Build the image
 docker build -t proton-bot .
 
-# Run the container
+# Run the container (requires external PostgreSQL and Redis)
 docker run -d \
   --env-file .env \
   -p 3000:3000 \
@@ -135,30 +177,29 @@ proton-bot/
 │   │   ├── client.ts        # Extended Discord client
 │   │   ├── componentCommandBuilder.ts
 │   │   └── messageCommandBuilder.ts
-│   ├── commands/            # Bot commands
-│   │   ├── application/     # Slash and context menu commands
-│   │   ├── components/      # Button, select menu, and modal handlers
-│   │   └── messageCommands/ # Prefix-based commands
 │   ├── configs/             # Configuration files
-│   ├── database/            # Database models and connection
-│   │   ├── models/          # Mongoose schemas
-│   │   └── main.ts          # Database connection
-│   ├── events/              # Discord event handlers
-│   │   ├── handlers/        # Interaction handlers
-│   │   └── debug/           # Debug events
+│   ├── generated/           # Generated Prisma client
+│   │   └── prisma/          # Prisma client output
+│   ├── init/                # Initialization scripts
+│   ├── modules/             # Feature modules
+│   │   └── module/          # The various modules
 │   ├── types/               # TypeScript type definitions
 │   ├── utils/               # Utility functions
 │   │   ├── env.ts           # Environment variable handling
 │   │   ├── logger.ts        # Logging utility
-│   │   └── webhook.ts       # Discord webhook client
+│   │   ├── webhook.ts       # Discord webhook client
+│   │   ├── create.ts        # Command creation utilities
+│   │   └── prototype.ts     # Prototype extensions
 │   └── index.ts             # Application entry point
-├── assets/                  # Static assets
+├── prisma/                  # Prisma schema and migrations
+│   └── schema.prisma        # Database schema
 ├── .github/                 # GitHub Actions workflows
 ├── Dockerfile              # Docker configuration
 ├── docker-compose.yaml     # Docker Compose configuration
 ├── package.json            # Dependencies and scripts
 ├── tsconfig.json           # TypeScript configuration
 ├── biome.json              # Biome linter/formatter config
+├── prisma.config.ts        # Prisma configuration
 └── README.md               # This file
 ```
 
@@ -171,61 +212,59 @@ The bot includes a REST API built with Hono:
 
 Default port: `3000` (configurable via `PORT` environment variable)
 
-## Adding Commands
+## Creating a Module
 
-### Slash Command
+Modules are organized in `src/modules/`. Each module can contain:
 
-Create a file in `src/commands/application/slash/`:
+```
+module-name/
+├── commands/        # Slash commands
+├── components/      # Buttons, select menus, modals
+└── events/          # Discord events
+```
+
+### Example Command
+
+Create a file in `src/modules/your-module/commands/example.ts`:
 
 ```typescript
-import { SlashCommandBuilder } from 'discord.js';
-import { createSlashCommand } from '../../../utils/create';
+import { SlashCommandBuilder, InteractionContextType } from 'discord.js';
+import { CommandTypes } from '../../../types/enums';
+import { createCommand } from '../../../utils/create';
 
-export default createSlashCommand({
+export const command = createCommand({
+  type: CommandTypes.SlashCommand,
   data: new SlashCommandBuilder()
     .setName('example')
-    .setDescription('Example command'),
+    .setDescription('Example command')
+    .setContexts(InteractionContextType.Guild),
   
-  async execute({ interaction, client }) {
+  execute: async (client, interaction) => {
     await interaction.reply('Hello from Proton!');
-  }
+    return true;
+  },
 });
 ```
 
-### Button Command
+### Example Button Component
 
-Create a file in `src/commands/components/buttons/`:
+Create a file in `src/modules/your-module/components/example-button.ts`:
 
 ```typescript
-import { createButtonCommand } from '../../../utils/create';
+import { CommandTypes } from '../../../types/enums';
+import { createCommand } from '../../../utils/create';
 
-export default createButtonCommand({
+export const command = createCommand({
+  type: CommandTypes.Button,
   data: {
-    customId: 'example-button'
+    customId: 'example-button',
   },
   
-  async execute({ interaction, client }) {
+  execute: async (client, interaction) => {
     await interaction.reply('Button clicked!');
-  }
+    return true;
+  },
 });
-```
-
-## Events
-
-Event handlers are automatically loaded from `src/events/`. Create a new file:
-
-```typescript
-import { Events } from 'discord.js';
-import type { Event } from '../types/event';
-
-export default {
-  name: Events.MessageCreate,
-  clientIsReady: true,
-  
-  async run(client, message) {
-    // Your event logic here
-  }
-} satisfies Event<Events.MessageCreate>;
 ```
 
 ## Environment Variables
@@ -234,8 +273,9 @@ export default {
 |----------|----------|-------------|
 | `DISCORD_BOT_TOKEN` | ✅ | Your Discord bot token |
 | `DISCORD_CLIENT_ID` | ✅ | Your Discord application ID |
-| `MONGO_URI` | ✅ | MongoDB connection string |
-| `DATABASE_NAME` | ✅ | MongoDB database name |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `REDIS_HOST` | ❌ | Redis host (default: localhost) |
+| `REDIS_PORT` | ❌ | Redis port (default: 6379) |
 | `PORT` | ❌ | API server port (default: 3000) |
 | `NODE_ENV` | ✅ | Environment (development/production) |
 | `WEBHOOK_URL` | ❌ | Discord webhook URL for logging |
@@ -262,7 +302,17 @@ This project uses Bun instead of Node.js for several advantages:
 - 🔐 **Native .env Support:** Automatically loads environment variables
 - 💾 **Lower Memory Usage:** More efficient memory management
 
+## Why Prisma?
+
+- 🎯 **Type Safety:** Auto-generated TypeScript types for your database
+- 📝 **Intuitive Schema:** Easy-to-read schema definition language
+- 🔄 **Migrations:** Built-in migration system for database changes
+- 🎨 **Prisma Studio:** Visual database browser included
+- 🔌 **Multiple Databases:** Easy to switch between database providers
+
 ## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -270,9 +320,11 @@ This project uses Bun instead of Node.js for several advantages:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 
@@ -280,4 +332,4 @@ This project is licensed under the MIT License.
 
 ---
 
-Built with ❤️ using Bun and Discord.js
+Built with ❤️ using Bun, Discord.js, and Prisma
