@@ -1,0 +1,14 @@
+model Module {
+  id         Int     @id @default(autoincrement())
+  guildId    String  @unique
+  automod    Boolean @default(false)
+  leveling   Boolean @default(false)
+  logging    Boolean @default(false)
+  moderation Boolean @default(true)
+  starboard  Boolean @default(false)
+  tickets    Boolean @default(false)
+
+  guild Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@map("module")
+}
