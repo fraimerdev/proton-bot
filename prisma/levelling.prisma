@@ -1,19 +1,18 @@
 model Levelling {
-  id              String   @id @default(cuid())
-  guildId         String   @unique
+  id              String            @id @default(cuid())
+  guildId         String            @unique
   levelUpChannel  String?
   silent          Boolean?
-  levelUpMessage  String   @default("{user:mention} you have reached **level {level}**!")
+  levelUpMessage  String            @default("{user:mention} you have reached **level {level}**!")
   stack           Boolean?
   xpRate          Float?
   ignoredRoles    String[]
   ignoredChannels String[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  guild       Guild             @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
-  rewards     LevelReward[]
-  multipliers LevelMultiplier[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  multipliers     LevelMultiplier[]
+  rewards         LevelReward[]
+  guild           Guild             @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
 
   @@map("levelling")
 }

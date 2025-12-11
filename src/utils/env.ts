@@ -1,15 +1,7 @@
 import Logger from "./logger";
 
-export function checkEnvVar<T = string>(
-  name: string,
-  parser?: (value: string) => T,
-  panic?: true,
-): T;
-export function checkEnvVar<T = string>(
-  name: string,
-  parser?: (value: string) => T,
-  panic?: false,
-): T | undefined;
+export function checkEnvVar<T = string>(name: string, parser?: (value: string) => T, panic?: true): T;
+export function checkEnvVar<T = string>(name: string, parser?: (value: string) => T, panic?: false): T | undefined;
 export function checkEnvVar<T = string>(
   name: string,
   parser?: (value: string) => T,
@@ -18,11 +10,7 @@ export function checkEnvVar<T = string>(
   const envVar = Bun.env[name];
   if (!envVar) {
     if (panic) {
-      Logger.error(
-        `Missing required environment variable: ${name}`,
-        undefined,
-        true,
-      );
+      Logger.error(`Missing required environment variable: ${name}`, undefined, true);
     }
     return undefined;
   }

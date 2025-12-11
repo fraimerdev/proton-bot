@@ -1,27 +1,26 @@
 model User {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  username      String
-  email         String
-  avatar        String
-  votes         Int       @default(0)
-  votedAt       DateTime?
-  voteReminders Boolean   @default(false)
-  messages      Int       @default(0)
-  voiceTime     Int       @default(0)
-  invites       Int       @default(0)
-  lastMessage   DateTime?
-  lastVoice     DateTime?
-  lastVote      DateTime?
-  accessToken   String
-  refreshToken  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  moderationActions ModerationAction[] @relation("UserModerationActions")
-  cases             Case[]             @relation("UserCases")
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  username          String
+  email             String
+  avatar            String
+  votes             Int                @default(0)
+  votedAt           DateTime?
+  voteReminders     Boolean            @default(false)
+  messages          Int                @default(0)
+  voiceTime         Int                @default(0)
+  invites           Int                @default(0)
+  lastMessage       DateTime?
+  lastVoice         DateTime?
+  lastVote          DateTime?
+  accessToken       String
+  refreshToken      String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   moderatedCases    Case[]             @relation("ModeratorCases")
+  cases             Case[]             @relation("UserCases")
   levels            Level[]
+  moderationActions ModerationAction[] @relation("UserModerationActions")
 
   @@map("users")
 }

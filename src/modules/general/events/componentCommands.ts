@@ -20,34 +20,22 @@ export const event = createEvent({
   run: async (client, interaction) => {
     let commandsCollection: Collection<RegExp, ComponentCommand> | null = null;
 
-    if (interaction.isButton())
-      commandsCollection = client.commands.buttonCommands;
-    else if (interaction.isModalSubmit())
-      commandsCollection = client.commands.modalSubmit;
-    else if (interaction.isStringSelectMenu())
-      commandsCollection = client.commands.stringSelectMenuCommands;
-    else if (interaction.isUserSelectMenu())
-      commandsCollection = client.commands.userSelectMenuCommands;
-    else if (interaction.isRoleSelectMenu())
-      commandsCollection = client.commands.roleSelectMenuCommands;
-    else if (interaction.isMentionableSelectMenu())
-      commandsCollection = client.commands.mentionableSelectMenuCommands;
-    else if (interaction.isChannelSelectMenu())
-      commandsCollection = client.commands.channelSelectMenuCommands;
+    if (interaction.isButton()) commandsCollection = client.commands.buttonCommands;
+    else if (interaction.isModalSubmit()) commandsCollection = client.commands.modalSubmit;
+    else if (interaction.isStringSelectMenu()) commandsCollection = client.commands.stringSelectMenuCommands;
+    else if (interaction.isUserSelectMenu()) commandsCollection = client.commands.userSelectMenuCommands;
+    else if (interaction.isRoleSelectMenu()) commandsCollection = client.commands.roleSelectMenuCommands;
+    else if (interaction.isMentionableSelectMenu()) commandsCollection = client.commands.mentionableSelectMenuCommands;
+    else if (interaction.isChannelSelectMenu()) commandsCollection = client.commands.channelSelectMenuCommands;
     else return false;
 
     if (!commandsCollection) return false;
 
-    const command = commandsCollection.find((cmd) =>
-      cmd.data.customId.test(interaction.customId),
-    );
+    const command = commandsCollection.find((cmd) => cmd.data.customId.test(interaction.customId));
 
     if (!command) return false;
 
-    if (
-      command.devOnly &&
-      !client.config.devsIds.includes(interaction.user.id)
-    ) {
+    if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
       await interaction.reply({
         content: "You don't have permission to use this command.",
         ephemeral: true,
@@ -88,13 +76,9 @@ export const event = createEvent({
       const errorMessage = "An error occurred while executing this command.";
 
       if (command.defer) {
-        await interaction
-          .editReply({ content: errorMessage })
-          .catch(() => null);
+        await interaction.editReply({ content: errorMessage }).catch(() => null);
       } else {
-        await interaction
-          .reply({ content: errorMessage, ephemeral: true })
-          .catch(() => null);
+        await interaction.reply({ content: errorMessage, ephemeral: true }).catch(() => null);
       }
 
       return false;

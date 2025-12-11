@@ -14,10 +14,7 @@ export const event = createEvent({
 
     if (!command) return false;
 
-    if (
-      command.devOnly &&
-      !client.config.devsIds.includes(interaction.user.id)
-    ) {
+    if (command.devOnly && !client.config.devsIds.includes(interaction.user.id)) {
       return false;
     }
     if (!command.autoComplete) return false;

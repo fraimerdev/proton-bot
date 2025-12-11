@@ -1,26 +1,25 @@
 model Guild {
-  id             String    @id @default(cuid())
-  guildId        String    @unique
-  unbanDate      DateTime?
-  banReason      String?
-  messagePreview Boolean   @default(true)
-  isPremium      Boolean   @default(false)
-  trialStart     DateTime?
-  trialStatus    Int       @default(0)
-  embedColor     String    @default("#317ff5")
-  publicPage     Boolean   @default(false)
-  vanity         String?   @unique
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  levelling         Levelling?
-  logging           Logging?
-  moderation        Moderation?
-  logs              Log[]
+  id                String             @id @default(cuid())
+  guildId           String             @unique
+  unbanDate         DateTime?
+  banReason         String?
+  messagePreview    Boolean            @default(true)
+  isPremium         Boolean            @default(false)
+  trialStart        DateTime?
+  trialStatus       Int                @default(0)
+  embedColor        String             @default("#317ff5")
+  publicPage        Boolean            @default(false)
+  vanity            String?            @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   cases             Case[]
+  levelling         Levelling?
+  levels            Level[]
+  logging           Logging?
+  logs              Log[]
+  moderation        Moderation?
   moderationActions ModerationAction[]
   modules           Module?
-  levels            Level[]
 
   @@map("guilds")
 }

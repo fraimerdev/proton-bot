@@ -1,3 +1,17 @@
+model Log {
+  id        String   @id @default(cuid())
+  guildId   String
+  type      LogType  @default(Unknown)
+  enabled   Boolean
+  channelId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  guild     Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, type])
+  @@map("logs")
+}
+
 enum LogType {
   ChannelCreate
   ChannelDelete
@@ -17,19 +31,4 @@ enum LogType {
   WarnDelete
   WarnUpdate
   Unknown
-}
-
-model Log {
-  id        String   @id @default(cuid())
-  guildId   String
-  type      LogType  @default(Unknown)
-  enabled   Boolean
-  channelId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  guild Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
-
-  @@unique([guildId, type])
-  @@map("logs")
 }

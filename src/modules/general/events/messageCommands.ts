@@ -1,6 +1,10 @@
 import { Events } from "discord.js";
 
 import { createEvent } from "../../../utils/create";
+import { RateLimiter } from "../../../utils/rateLimiter";
+
+// Global rate limiters map for commands
+const commandLimiters = new Map<string, RateLimiter>();
 
 export const event = createEvent({
   name: Events.MessageCreate,
@@ -22,6 +26,35 @@ export const event = createEvent({
 
     if (!command) return false;
     if (command.devOnly && !client.config.devsIds.includes(message.author.id)) return false;
+
+    // Handle rate limiting
+    if (command.cooldown) {
+      const cooldownKey = `${commandName}`;
+      let limiter = commandLimiters.get(cooldownKey);
+
+      if (!limiter) {
+        limiter = new RateLimiter({
+          time: command.cooldown,
+          maxPoints: command.cooldownMaxUses || 1,
+          keyPrefix: `cmd:${commandName}`,
+        });
+        commandLimiters.set(cooldownKey, limiter);
+      }
+
+      const userKey = message.author.id;
+      const allowed = await limiter.check(userKey);
+
+      if (!allowed) {
+        const remaining = await limiter.getTimeUntilReset(userKey);
+        const seconds = Math.ceil(remaining / 1000);
+        await message
+          .reply({
+            content: `⏱️ You're on cooldown! Please wait ${seconds} second${seconds !== 1 ? "s" : ""} before using this command again.`,
+          })
+          .catch(() => null);
+        return false;
+      }
+    }
 
     client.logger.logCommandUsed(command, message.author);
 

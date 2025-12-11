@@ -1,12 +1,6 @@
 import "./utils/prototype";
 
-import {
-  ActivityType,
-  AllowedMentionsTypes,
-  GatewayIntentBits,
-  Partials,
-  PresenceUpdateStatus,
-} from "discord.js";
+import { ActivityType, AllowedMentionsTypes, GatewayIntentBits, Partials, PresenceUpdateStatus } from "discord.js";
 
 import { Client } from "./base/client";
 import { ENV } from "./utils/env";

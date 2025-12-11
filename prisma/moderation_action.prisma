@@ -6,9 +6,8 @@ model ModerationAction {
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  guild Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
-  user  User  @relation("UserModerationActions", fields: [userId], references: [userId], onDelete: Cascade)
+  guild     Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  user      User     @relation("UserModerationActions", fields: [userId], references: [userId], onDelete: Cascade)
 
   @@index([guildId, userId])
   @@index([expiresAt])

@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@catppuccin/palette": "^1.7.1",
+    "@napi-rs/canvas": "^0.1.84",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "@types/pg": "^8.15.6",

@@ -1,0 +1,19 @@
+model Level {
+  id            String   @id @default(cuid())
+  guildId       String
+  userId        String
+  level         Int      @default(0)
+  xpTotal       Int      @default(0)
+  xpCurrent     Int      @default(0)
+  xpRequired    Int      @default(0)
+  rankcardImage String?
+  rankcardColor String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  guild         Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId, userId])
+  @@map("levels")
+}

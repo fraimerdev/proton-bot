@@ -1,28 +1,17 @@
 import { lstat, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import {
-  Collection,
-  Client as DiscordBotClient,
-  REST,
-  Routes,
-} from "discord.js";
+import { Collection, Client as DiscordBotClient, REST, Routes } from "discord.js";
 
 import { startApi } from "../api/app";
 import { Config } from "../configs/bot";
 import prisma from "../init/database";
-import type {
-  AnyCommand,
-  ApplicationCommand,
-  ClientCommands,
-} from "../types/command";
+import type { AnyCommand, ApplicationCommand, ClientCommands } from "../types/command";
 import { CommandTypes } from "../types/enums";
 import type { AnyEvent } from "../types/event";
 import { ENV } from "../utils/env";
 import Logger from "../utils/logger";
 
-export class Client<
-  Ready extends boolean = boolean,
-> extends DiscordBotClient<Ready> {
+export class Client<Ready extends boolean = boolean> extends DiscordBotClient<Ready> {
   protected cwd: string = process.cwd();
 
   protected isTypescript: boolean = process.argv[1].endsWith(".ts");
@@ -42,10 +31,7 @@ export class Client<
 
     modalSubmit: new Collection(),
     get applicationCommands() {
-      return new Collection<string, ApplicationCommand>([
-        ...this.slashCommands,
-        ...this.contextMenuCommands,
-      ]);
+      return new Collection<string, ApplicationCommand>([...this.slashCommands, ...this.contextMenuCommands]);
     },
   };
 
@@ -59,9 +45,7 @@ export class Client<
 
   protected async readDir<T>(dir: string): Promise<T[]> {
     try {
-      const baseDir = this.isTypescript
-        ? Client.sourceFolder
-        : Client.distFolder;
+      const baseDir = this.isTypescript ? Client.sourceFolder : Client.distFolder;
       const path = resolve(this.cwd, baseDir, dir);
       const files = await readdir(path);
       const data: T[] = [];
@@ -75,20 +59,13 @@ export class Client<
           continue;
         }
 
-        if (!(this.isTypescript ? file.endsWith(".ts") : file.endsWith(".js")))
-          continue;
+        if (!(this.isTypescript ? file.endsWith(".ts") : file.endsWith(".js"))) continue;
 
-        const importData: Record<string, T | undefined> = await import(
-          filePath
-        );
+        const importData: Record<string, T | undefined> = await import(filePath);
         const importedLength = Object.keys(importData).length;
 
         if (importedLength === 0) {
-          Logger.error(
-            `File ${filePath} is empty, no exports found`,
-            undefined,
-            true,
-          );
+          Logger.error(`File ${filePath} is empty, no exports found`, undefined, true);
         }
 
         for (const key in importData) {
@@ -103,14 +80,9 @@ export class Client<
     }
   }
 
-  protected async loadEvents(
-    modulesDir: string,
-    debug = false,
-  ): Promise<boolean> {
+  protected async loadEvents(modulesDir: string, debug = false): Promise<boolean> {
     try {
-      const baseDir = this.isTypescript
-        ? Client.sourceFolder
-        : Client.distFolder;
+      const baseDir = this.isTypescript ? Client.sourceFolder : Client.distFolder;
       const modulesPath = resolve(this.cwd, baseDir, modulesDir);
       const modules = await readdir(modulesPath);
 
@@ -123,22 +95,16 @@ export class Client<
         if (!stat.isDirectory()) continue;
 
         try {
-          const events = await this.readDir<AnyEvent>(
-            `${modulesDir}/${moduleName}/events`,
-          );
+          const events = await this.readDir<AnyEvent>(`${modulesDir}/${moduleName}/events`);
 
           for (const event of events) {
             this.on(event.name, async (...args) => {
-              if (!this.isReady() && event.clientIsReady !== false)
-                return false;
+              if (!this.isReady() && event.clientIsReady !== false) return false;
 
               try {
                 await event.run(this, ...args);
               } catch (error) {
-                Logger.error(
-                  `Event ${event.name} execution failed`,
-                  error as Error,
-                );
+                Logger.error(`Event ${event.name} execution failed`, error as Error);
               }
             });
 
@@ -146,8 +112,6 @@ export class Client<
             eventsLoaded++;
           }
         } catch {
-          // Module might not have events directory, continue
-          continue;
         }
       }
 
@@ -158,14 +122,9 @@ export class Client<
     }
   }
 
-  protected async loadCommands(
-    modulesDir: string,
-    debug = false,
-  ): Promise<boolean> {
+  protected async loadCommands(modulesDir: string, debug = false): Promise<boolean> {
     try {
-      const baseDir = this.isTypescript
-        ? Client.sourceFolder
-        : Client.distFolder;
+      const baseDir = this.isTypescript ? Client.sourceFolder : Client.distFolder;
       const modulesPath = resolve(this.cwd, baseDir, modulesDir);
       const modules = await readdir(modulesPath);
 
@@ -179,9 +138,7 @@ export class Client<
 
         // Load commands from modules/**/commands/.ts
         try {
-          const commands = await this.readDir<AnyCommand>(
-            `${modulesDir}/${moduleName}/commands`,
-          );
+          const commands = await this.readDir<AnyCommand>(`${modulesDir}/${moduleName}/commands`);
           allCommands.push(...commands);
         } catch {
           // Module might not have commands directory, continue
@@ -189,9 +146,7 @@ export class Client<
 
         // Load components from modules/**/components/**/*.ts
         try {
-          const components = await this.readDir<AnyCommand>(
-            `${modulesDir}/${moduleName}/components`,
-          );
+          const components = await this.readDir<AnyCommand>(`${modulesDir}/${moduleName}/components`);
           allCommands.push(...components);
         } catch {
           // Module might not have components directory, continue
@@ -200,9 +155,7 @@ export class Client<
 
       if (allCommands.length === 0) return false;
 
-      allCommands = allCommands.sort(
-        (a, b) => a.type - b.type || a.data.name.localeCompare(b.data.name),
-      );
+      allCommands = allCommands.sort((a, b) => a.type - b.type || a.data.name.localeCompare(b.data.name));
 
       for (const command of allCommands) {
         switch (command.type) {
@@ -223,34 +176,19 @@ export class Client<
             this.commands.modalSubmit.set(command.data.customId, command);
             break;
           case CommandTypes.StringSelectMenuCommand:
-            this.commands.stringSelectMenuCommands.set(
-              command.data.customId,
-              command,
-            );
+            this.commands.stringSelectMenuCommands.set(command.data.customId, command);
             break;
           case CommandTypes.UserSelectMenuCommand:
-            this.commands.userSelectMenuCommands.set(
-              command.data.customId,
-              command,
-            );
+            this.commands.userSelectMenuCommands.set(command.data.customId, command);
             break;
           case CommandTypes.RoleSelectMenuCommand:
-            this.commands.roleSelectMenuCommands.set(
-              command.data.customId,
-              command,
-            );
+            this.commands.roleSelectMenuCommands.set(command.data.customId, command);
             break;
           case CommandTypes.MentionableSelectMenuCommand:
-            this.commands.mentionableSelectMenuCommands.set(
-              command.data.customId,
-              command,
-            );
+            this.commands.mentionableSelectMenuCommands.set(command.data.customId, command);
             break;
           case CommandTypes.ChannelSelectMenuCommand:
-            this.commands.channelSelectMenuCommands.set(
-              command.data.customId,
-              command,
-            );
+            this.commands.channelSelectMenuCommands.set(command.data.customId, command);
             break;
         }
 
@@ -265,9 +203,7 @@ export class Client<
   }
 
   protected async registerCommands(): Promise<boolean> {
-    const commands = this.commands.applicationCommands.map((command) =>
-      command.data.toJSON(),
-    );
+    const commands = this.commands.applicationCommands.map((command) => command.data.toJSON());
 
     const rest = new REST().setToken(ENV.BOT_TOKEN);
 
@@ -283,25 +219,15 @@ export class Client<
   }
 
   public async init(options: StartOptions): Promise<boolean> {
-    const loadCommands = await this.loadCommands(
-      options.modulesDirName,
-      options.debug,
-    );
+    const loadCommands = await this.loadCommands(options.modulesDirName, options.debug);
 
-    if (options.debug && loadCommands)
-      Logger.success("Commands loaded successfully");
+    if (options.debug && loadCommands) Logger.success("Commands loaded successfully");
 
-    const loadEvents = await this.loadEvents(
-      options.modulesDirName,
-      options.debug,
-    );
+    const loadEvents = await this.loadEvents(options.modulesDirName, options.debug);
 
-    if (options.debug && loadEvents)
-      Logger.success("Events loaded successfully");
+    if (options.debug && loadEvents) Logger.success("Events loaded successfully");
 
-    const registeredCommands = options.registerCommands
-      ? await this.registerCommands()
-      : true;
+    const registeredCommands = options.registerCommands ? await this.registerCommands() : true;
 
     if (options.debug && options.registerCommands && registeredCommands)
       Logger.success("Application commands registered successfully");
@@ -310,17 +236,11 @@ export class Client<
       .then(() => true)
       .catch(() => false);
 
-    if (options.debug && loggedToDiscord)
-      Logger.success("Logged in to Discord");
+    if (options.debug && loggedToDiscord) Logger.success("Logged in to Discord");
 
     const startApiSuccess = await startApi(options.debug);
 
-    const allSuccess =
-      loadCommands &&
-      loadEvents &&
-      registeredCommands &&
-      loggedToDiscord &&
-      startApiSuccess;
+    const allSuccess = loadCommands && loadEvents && registeredCommands && loggedToDiscord && startApiSuccess;
 
     return allSuccess;
   }

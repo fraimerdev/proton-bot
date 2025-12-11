@@ -13,10 +13,9 @@ model Case {
   reason             String
   createdAt          DateTime
   updatedAt          DateTime @updatedAt
-
-  guild     Guild @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
-  user      User  @relation("UserCases", fields: [userId], references: [userId], onDelete: Cascade)
-  moderator User  @relation("ModeratorCases", fields: [moderatorId], references: [userId], onDelete: Cascade)
+  guild              Guild    @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  moderator          User     @relation("ModeratorCases", fields: [moderatorId], references: [userId], onDelete: Cascade)
+  user               User     @relation("UserCases", fields: [userId], references: [userId], onDelete: Cascade)
 
   @@index([guildId, caseId])
   @@map("cases")
