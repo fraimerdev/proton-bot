@@ -1,18 +1,30 @@
 import path from "node:path";
-import { Canvas, GlobalFonts, type Image, loadImage } from "@napi-rs/canvas";
-import { SHA512_256 } from "bun";
-import { AttachmentBuilder, type GuildMember } from "discord.js";
+import {
+  Canvas,
+  GlobalFonts,
+  type Image,
+  loadImage,
+  type SKRSContext2D,
+} from "@napi-rs/canvas";
+import {
+  AttachmentBuilder,
+  type GuildMember,
+  type ImageURLOptions,
+} from "discord.js";
 import type { Level } from "#generated/prisma";
-import { Config } from "../../../configs/bot";
 import prisma from "../../../init/database";
 import Logger from "../../../utils/logger";
 import { abbrev } from "../../../utils/utils";
 
-export async function getRankCard(member: GuildMember, levelData: Level) {
-  const defaultImage = path.join(__dirname, "../../../../assets/rankcard.png");
-  const customImage = null;
-  const mainColor = Config.color;
+const CARD_WIDTH = 934;
+const CARD_HEIGHT = 282;
+const PROGRESS_BAR_HEIGHT = 30;
+const CARD_BORDER_RADIUS = 40;
+const CARD_BORDER_WIDTH = 8;
+const AVATAR_SIZE = 200;
+const VERTICAL_CENTER = 141;
 
+export async function getRankCard(member: GuildMember, levelData: Level) {
   let rank = await prisma.level.count({
     where: {
       guildId: member.guild.id,
@@ -22,72 +34,40 @@ export async function getRankCard(member: GuildMember, levelData: Level) {
 
   rank += 1;
 
-  const canvas = new Canvas(1100, 370);
+  const canvas = new Canvas(CARD_WIDTH, CARD_HEIGHT);
   const ctx = canvas.getContext("2d");
 
-  ctx.globalAlpha = 0.8;
-
-  const h = canvas.height;
-  const w = canvas.width;
-  const x = 0;
-  const y = 0;
-  const r = 50;
-  let backgroundImg: Image;
-
-  GlobalFonts.registerFromPath(
-    path.join(__dirname, "../../../../assets/fonts/MANROPE_REGULAR.ttf"),
-    "Manrope",
-  );
-
-  GlobalFonts.registerFromPath(
-    path.join(__dirname, "../../../../assets/fonts/MANROPE_BOLD.ttf"),
-    "Manrope",
-  );
-
-  try {
-    backgroundImg = await loadImage(customImage || defaultImage);
-  } catch {
-    backgroundImg = await loadImage(defaultImage);
-  }
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+  roundRect(ctx, 0, 0, CARD_WIDTH, CARD_HEIGHT, CARD_BORDER_RADIUS);
   ctx.clip();
 
-  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-  ctx.globalAlpha = 1;
-  ctx.font = "bold 44px Manrope";
-  ctx.fillStyle = "white";
-  ctx.textAlign = "left";
+  GlobalFonts.registerFromPath(
+    path.join(__dirname, "../../../../assets/fonts/FeelinTeachy.ttf"),
+    "FeelinTeachy",
+  );
+  GlobalFonts.registerFromPath(
+    path.join(__dirname, "../../../../assets/fonts/KGPerfectPenmanship.ttf"),
+    "KGPerfectPenmanship",
+  );
 
-  ctx.globalAlpha = 1;
-  ctx.font = "bold 44px Manrope";
-  ctx.fillStyle = "white";
-  ctx.textAlign = "left";
-  ctx.fillText(member.nickname || member.user.displayName, 320, 220);
-  ctx.font = "44px Manrope";
-  ctx.fillStyle = "white";
-  ctx.textAlign = "end";
-  ctx.fillText(`Level ${levelData.level}`, 1010, 220);
-  ctx.font = "44px Manrope";
-  ctx.fillStyle = "white";
+  const imgURLOptions: ImageURLOptions = {
+    forceStatic: true,
+    size: 1024,
+    extension: "png",
+  };
 
-  const levelWidth =
-    1110 -
-    ctx.measureText(abbrev(rank)).width -
-    7 -
-    ctx.measureText(`Rank`).width;
-  ctx.fillText(`Rank`, levelWidth, 80);
-  ctx.font = "44px Manrope";
+  const avatarUrl = member.displayAvatarURL(imgURLOptions);
+  const avatarImage = await loadImage(avatarUrl);
+
+  const accentColor = await extractDominantColor(avatarImage);
+
+  await drawUserBackground(member, ctx);
+  drawCardBorder(ctx, accentColor);
+  await drawAvatar(ctx, avatarImage, accentColor);
+
+  const contentStartX = 260;
+  const contentWidth = CARD_WIDTH - contentStartX - 40;
+
+  ctx.font = '500 30px "KGPerfectPenmanship"';
   ctx.fillStyle =
     rank === 1
       ? "#FFD700"
@@ -95,64 +75,367 @@ export async function getRankCard(member: GuildMember, levelData: Level) {
         ? "#C0C0C0"
         : rank === 3
           ? "#CD7F32"
-          : mainColor.toString();
+          : "#FFFFFF";
   ctx.textAlign = "right";
-  ctx.fillText(abbrev(rank), 950 + ctx.measureText(`Rank`).width - 30, 80);
-  const barHeight = 280;
-  const barWidth = 50;
-  const x_start = 730 + barHeight;
-  const x_end = 310;
-  const barLength = x_start - x_end;
-  ctx.beginPath();
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "#4d4d4d";
-  ctx.lineWidth = barWidth;
-  ctx.moveTo(x_start, barHeight);
-  ctx.lineTo(x_end, barHeight);
-  ctx.stroke();
-  ctx.closePath();
-  ctx.beginPath();
-  ctx.lineWidth = barWidth;
-  ctx.moveTo(x_end, barHeight);
-  ctx.lineTo(
-    x_end + barLength * (levelData.xpCurrent / levelData.xpRequired),
-    barHeight,
-  );
-  ctx.strokeStyle = mainColor.toString();
-  ctx.stroke();
-  ctx.closePath();
-  const xpText = `${Math.floor((levelData.xpCurrent / levelData.xpRequired) * 100)}%`;
-  ctx.font = "44px Manrope";
-  ctx.fillStyle = "white";
-  ctx.textAlign = "right";
-  ctx.fillText(xpText, barLength / 2 + x_end, 297);
-  ctx.beginPath();
-  const logorad = 108;
-  ctx.arc(67 + logorad, 83 + logorad, logorad, 0, Math.PI * 2, true);
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = "white";
-  ctx.stroke();
-  ctx.closePath();
-  ctx.clip();
+  const rankText = `#${rank}`;
+  ctx.fillText(rankText, CARD_WIDTH - 40, 50);
 
-  try {
-    const avatar = await loadImage(
-      member.user.displayAvatarURL({ size: 2048, extension: "png" }),
-    );
-    ctx.drawImage(avatar, 67, 83, 2 * logorad, 2 * logorad);
-  } catch (err) {
-    Logger.warn(
-      `command: leaderboard: failed to load user avatar, user id: ` +
-        member.user.id +
-        "guild id:" +
-        member.guild.id +
-        err,
-    );
-  }
+  ctx.font = '600 48px "KGPerfectPenmanship"';
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "left";
+  const displayName = member.displayName.replace(/(( +)|!)/g, " ").trim();
+  ctx.fillText(displayName, contentStartX, VERTICAL_CENTER - 30);
+
+  ctx.font = '500 30px "KGPerfectPenmanship"';
+  ctx.fillStyle = "#FFFFFF";
+  const levelText = `Level ${levelData.level}`;
+  ctx.fillText(levelText, contentStartX, VERTICAL_CENTER + 20);
+
+  const progressPercentage = levelData.xpCurrent / levelData.xpRequired;
+
+  ctx.font = '500 24px "KGPerfectPenmanship"';
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "right";
+  const xpText = `${abbrev(levelData.xpTotal)} / ${abbrev(
+    levelData.xpTotal - levelData.xpCurrent + levelData.xpRequired,
+  )} XP (${Math.floor(progressPercentage * 100)}%)`;
+  ctx.fillText(xpText, CARD_WIDTH - 40, VERTICAL_CENTER + 20);
+
+  const progressBarY = VERTICAL_CENTER + 50;
+  await drawProgressBar({
+    context: ctx,
+    progress: progressPercentage,
+    x: contentStartX,
+    y: progressBarY,
+    width: contentWidth,
+    height: PROGRESS_BAR_HEIGHT,
+    accent: accentColor,
+    background: "rgba(0, 0, 0, 0.6)",
+  });
 
   return [
     new AttachmentBuilder(canvas.toBuffer("image/png"))
       .setName("rankcard.png")
       .setDescription(`Rank Card for ${member.displayName}`),
   ];
+}
+
+function drawCardBorder(ctx: SKRSContext2D, accentColor: string): void {
+  ctx.save();
+
+  roundRect(
+    ctx,
+    CARD_BORDER_WIDTH / 2,
+    CARD_BORDER_WIDTH / 2,
+    CARD_WIDTH - CARD_BORDER_WIDTH,
+    CARD_HEIGHT - CARD_BORDER_WIDTH,
+    CARD_BORDER_RADIUS,
+  );
+
+  ctx.lineWidth = CARD_BORDER_WIDTH;
+  ctx.strokeStyle = accentColor;
+  ctx.stroke();
+
+  ctx.shadowColor = "rgb(0, 0, 0)";
+  ctx.shadowBlur = 10;
+  ctx.lineWidth = CARD_BORDER_WIDTH + 2;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+async function extractDominantColor(img: Image): Promise<string> {
+  const sampleSize = 50;
+  const canvas = new Canvas(sampleSize, sampleSize);
+  const ctx = canvas.getContext("2d");
+
+  ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+  const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+
+  const samples = [];
+  for (
+    let i = 0;
+    i < imageData.length;
+    i += 4 * Math.floor(imageData.length / (4 * 20))
+  ) {
+    if (imageData[i + 3] < 128) continue;
+
+    const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+    if (brightness < 30 || brightness > 225) continue;
+
+    samples.push({
+      r: imageData[i],
+      g: imageData[i + 1],
+      b: imageData[i + 2],
+      a: imageData[i + 3],
+    });
+  }
+
+  if (samples.length === 0) return "#5865F2";
+
+  const avgColor = samples.reduce(
+    (acc, pixel) => {
+      acc.r += pixel.r;
+      acc.g += pixel.g;
+      acc.b += pixel.b;
+      return acc;
+    },
+    { r: 0, g: 0, b: 0 },
+  );
+
+  avgColor.r = Math.round(avgColor.r / samples.length);
+  avgColor.g = Math.round(avgColor.g / samples.length);
+  avgColor.b = Math.round(avgColor.b / samples.length);
+
+  const vibrantColor = makeColorMoreVibrant(avgColor);
+  return `rgb(${vibrantColor.r}, ${vibrantColor.g}, ${vibrantColor.b})`;
+}
+
+function makeColorMoreVibrant(color: { r: number; g: number; b: number }): {
+  r: number;
+  g: number;
+  b: number;
+} {
+  const max = Math.max(color.r, color.g, color.b);
+
+  if (color.r === max) {
+    return {
+      r: Math.min(255, color.r * 1.2),
+      g: Math.max(0, color.g * 0.8),
+      b: Math.max(0, color.b * 0.8),
+    };
+  } else if (color.g === max) {
+    return {
+      r: Math.max(0, color.r * 0.8),
+      g: Math.min(255, color.g * 1.2),
+      b: Math.max(0, color.b * 0.8),
+    };
+  } else {
+    return {
+      r: Math.max(0, color.r * 0.8),
+      g: Math.max(0, color.g * 0.8),
+      b: Math.min(255, color.b * 1.2),
+    };
+  }
+}
+
+async function drawUserBackground(
+  member: GuildMember,
+  ctx: SKRSContext2D,
+): Promise<void> {
+  const imgURLOptions: ImageURLOptions = {
+    forceStatic: true,
+    size: 1024,
+    extension: "png",
+  };
+
+  try {
+    let backgroundUrl;
+    if (member.user.banner) {
+      backgroundUrl = member.user.bannerURL(imgURLOptions);
+    }
+
+    if (!backgroundUrl) {
+      backgroundUrl = member.displayAvatarURL(imgURLOptions);
+    }
+
+    const background = await loadImage(backgroundUrl);
+
+    const sourceWidth = background.width;
+    const sourceHeight = background.height;
+    const cardAspect = CARD_WIDTH / CARD_HEIGHT;
+    const imageAspect = sourceWidth / sourceHeight;
+
+    let sWidth, sHeight, sx, sy;
+
+    if (imageAspect > cardAspect) {
+      sHeight = sourceHeight;
+      sWidth = sourceHeight * cardAspect;
+      sy = 0;
+      sx = (sourceWidth - sWidth) / 2;
+    } else {
+      sWidth = sourceWidth;
+      sHeight = sourceWidth / cardAspect;
+      sx = 0;
+      sy = (sourceHeight - sHeight) / 2;
+    }
+
+    ctx.drawImage(
+      background,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
+      0,
+      0,
+      CARD_WIDTH,
+      CARD_HEIGHT,
+    );
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  } catch (error) {
+    Logger.warn(`Failed to load background image: ${error}`);
+    const gradient = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    gradient.addColorStop(0, "#36393F");
+    gradient.addColorStop(1, "#202225");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
+  }
+}
+
+async function drawAvatar(
+  ctx: SKRSContext2D,
+  avatarImage: Image,
+  accentColor: string,
+): Promise<void> {
+  try {
+    const centerX = 140;
+    const centerY = VERTICAL_CENTER;
+    const posX = centerX - AVATAR_SIZE / 2;
+    const posY = centerY - AVATAR_SIZE / 2;
+
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.drawImage(avatarImage, posX, posY, AVATAR_SIZE, AVATAR_SIZE);
+
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, AVATAR_SIZE / 2, 0, Math.PI * 2);
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = accentColor;
+    ctx.stroke();
+  } catch (error) {
+    Logger.warn(`Failed to draw avatar: ${error}`);
+  }
+}
+
+async function drawProgressBar({
+  context,
+  progress,
+  x,
+  y,
+  width,
+  height,
+  accent,
+  background,
+}: {
+  context: SKRSContext2D;
+  progress: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  accent: string;
+  background: string;
+}): Promise<void> {
+  const canvas = new Canvas(width, height);
+  const ctx = canvas.getContext("2d");
+
+  roundRect(ctx, 0, 0, width, height, height / 2);
+  ctx.fillStyle = background;
+  ctx.fill();
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = "rgba(0, 0, 0, 0)";
+  roundRect(ctx, 0, 0, width, height, height / 2);
+  ctx.fill();
+  ctx.restore();
+
+  const progressWidth = Math.max(Math.min(width * progress, width), height / 2);
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, 0, 0, progressWidth, height, height / 2);
+  ctx.clip();
+
+  const gradient = ctx.createLinearGradient(0, 0, progressWidth, 0);
+  gradient.addColorStop(0, accent);
+  gradient.addColorStop(1, lightenColor(accent, 30));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, progressWidth, height);
+
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fillRect(0, 0, progressWidth, height);
+
+  ctx.restore();
+  context.drawImage(canvas, x, y, width, height);
+}
+
+function roundRect(
+  ctx: SKRSContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  if (width < 2 * radius) radius = width / 2;
+  if (height < 2 * radius) radius = height / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
+function lightenColor(color: string, amount: number): string {
+  if (color.startsWith("rgb")) {
+    const match = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+      const r = Math.min(255, parseInt(match[1]) + amount);
+      const g = Math.min(255, parseInt(match[2]) + amount);
+      const b = Math.min(255, parseInt(match[3]) + amount);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+  }
+
+  const rgb = hexToRgb(color);
+  if (!rgb) return color;
+
+  const newRgb = {
+    r: Math.min(255, rgb.r + amount),
+    g: Math.min(255, rgb.g + amount),
+    b: Math.min(255, rgb.b + amount),
+  };
+
+  return `rgb(${newRgb.r}, ${newRgb.g}, ${newRgb.b})`;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  if (!hex || !hex.startsWith("#")) return null;
+
+  hex = hex.replace(/^#/, "");
+
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+
+  if (!/^[0-9A-F]{6}$/i.test(hex)) return null;
+
+  const bigint = parseInt(hex, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
 }

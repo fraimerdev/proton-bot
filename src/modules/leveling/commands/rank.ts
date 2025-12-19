@@ -16,7 +16,13 @@ export const command = createCommand({
   cooldownMaxUses: 3,
   data: new SlashCommandBuilder()
     .setName("rank")
-    .setDescription("Check your rank and level in the server."),
+    .setDescription("Check your rank and level in the server.")
+    .addUserOption((option) =>
+      option
+        .setName("user")
+        .setDescription("The user to check the rank of.")
+        .setRequired(false),
+    ),
 
   execute: async (client, interaction) => {
     const guild = interaction.guild;
